@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
 
-const SPEECH_KEY = 'your-speech-service-subscription-key';
-const SPEECH_REGION = 'your-speech-service-subscription-region-e.g.eastus';
+const SPEECH_KEY = 'your-key-of-speech-service';
+const SPEECH_REGION = 'eastus';
 
 export function SpeechToTextComponent() {
 
@@ -14,11 +14,37 @@ export function SpeechToTextComponent() {
   const [myTranscript, setMyTranscript] = useState("");
   const [recognizingTranscript, setRecTranscript] = useState("");
 
-  useEffect(() => {
+  const processRecognizedTranscript = (event) => {
+    const result = event.result;
+    console.log('Recognition result:', result);
+
+    if (result.reason === sdk.ResultReason.RecognizedSpeech) {
+      const transcript = result.text;
+      console.log('Transcript: -->', transcript);
+      // Call a function to process the transcript as needed
+
+      setMyTranscript(transcript);
+    }
+  };
+
+  const processRecognizingTranscript = (event) =>{
+    const result = event.result;
+    console.log('Recognition result:', result);
+    if (result.reason === sdk.ResultReason.RecognizingSpeech) {
+      const transcript = result.text;
+      console.log('Transcript: -->', transcript);
+      // Call a function to process the transcript as needed
+
+      setRecTranscript(transcript);
+    }
+  }
+
+  const initRecognizer = () => {
     speechConfig.current = sdk.SpeechConfig.fromSubscription(
       SPEECH_KEY,
       SPEECH_REGION
     );
+
     speechConfig.current.speechRecognitionLanguage = 'en-US';
 
     audioConfig.current = sdk.AudioConfig.fromDefaultMicrophoneInput();
@@ -27,34 +53,8 @@ export function SpeechToTextComponent() {
       audioConfig.current
     );
 
-    const processRecognizedTranscript = (event) => {
-      const result = event.result;
-      console.log('Recognition result:', result);
-
-      if (result.reason === sdk.ResultReason.RecognizedSpeech) {
-        const transcript = result.text;
-        console.log('Transcript: -->', transcript);
-        // Call a function to process the transcript as needed
-
-        setMyTranscript(transcript);
-      }
-    };
-
-    const processRecognizingTranscript = (event) =>{
-      const result = event.result;
-      console.log('Recognition result:', result);
-      if (result.reason === sdk.ResultReason.RecognizingSpeech) {
-        const transcript = result.text;
-        console.log('Transcript: -->', transcript);
-        // Call a function to process the transcript as needed
-
-        setRecTranscript(transcript);
-      }
-    }
-
     recognizer.current.recognized = (s, e) => processRecognizedTranscript(e);
     recognizer.current.recognizing = (s, e) => processRecognizingTranscript(e);
-
 
     recognizer.current.startContinuousRecognitionAsync(() => {
       console.log('Speech recognition started.');
@@ -66,6 +66,10 @@ export function SpeechToTextComponent() {
         setIsListening(false);
       });
     };
+  }
+
+  useEffect(() => {
+    initRecognizer();
   }, []);
 
   const pauseListening = () => {
@@ -98,11 +102,17 @@ export function SpeechToTextComponent() {
 
       <div>
         <div>
-          Recognizing Transcript : {recognizingTranscript}
+          Recognizing Transcript :
+        </div>
+        <div>
+          <textarea rows="5" cols="40" value={recognizingTranscript}/>
         </div>
 
         <div>
-          RecognizedTranscript : {myTranscript}
+          RecognizedTranscript :
+        </div>
+        <div>
+          <textarea rows="5" cols="40" value={myTranscript}/>
         </div>
       </div>
     </div>
